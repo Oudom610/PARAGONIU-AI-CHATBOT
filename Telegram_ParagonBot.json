@@ -1,0 +1,438 @@
+{
+  "name": "Telegram ParagonBot",
+  "nodes": [
+    {
+      "parameters": {
+        "updates": [
+          "message"
+        ],
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegramTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        0,
+        280
+      ],
+      "id": "9f0b07ea-f724-4309-b4ed-8f1c24adc43f",
+      "name": "Telegram Trigger",
+      "webhookId": "5a4bad67-430b-4fe1-8c1f-0ba3786110c8",
+      "credentials": {
+        "telegramApi": {
+          "id": "QRdJieseamFACxBo",
+          "name": "dom_n8n_testing_bot"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "model": "deepseek/deepseek-r1-0528:free",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenRouter",
+      "typeVersion": 1,
+      "position": [
+        1124,
+        400
+      ],
+      "id": "422e4681-113f-44ef-a6d2-0e83d4affaa2",
+      "name": "OpenRouter Chat Model",
+      "credentials": {
+        "openRouterApi": {
+          "id": "EsgTrCmKLg2taeW8",
+          "name": "Paragon Chatbot (oudombol610)"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://f77f-193-36-237-24.ngrok-free.app/search",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"query_text\": \"{{ $('Telegram Trigger').first().json.message.text }}\",\n  \"k\": 5\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        816,
+        180
+      ],
+      "id": "4a4c71ea-679c-403c-b46f-c6e9ffb3c80e",
+      "name": "HTTP Request"
+    },
+    {
+      "parameters": {
+        "model": "deepseek/deepseek-r1-0528:free",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenRouter",
+      "typeVersion": 1,
+      "position": [
+        308,
+        500
+      ],
+      "id": "61e60ce9-e516-4bfe-81cb-40a7f01ca7b8",
+      "name": "OpenRouter Chat Model1",
+      "credentials": {
+        "openRouterApi": {
+          "id": "EsgTrCmKLg2taeW8",
+          "name": "Paragon Chatbot (oudombol610)"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Check if this question is asking about Paragon University topics.\n\nQuestion: {{ $('Telegram Trigger').first().json.message.text }}\n\nIf the question is about education, academic programs, courses, admissions, campus, or subjects taught at universities = RELEVANT\nIf the question is about cooking, weather, sports, or other non-educational topics = IRRELEVANT\n\nOutput only ONE word: RELEVANT or IRRELEVANT\n\nCRITICAL: Output ONLY the ONE word. No explanations. No punctuation. No newlines. Just one word.",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 2,
+      "position": [
+        220,
+        280
+      ],
+      "id": "8f5b6919-5c8f-4a95-9a59-daa76441a084",
+      "name": "Question Validator"
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $('Telegram Trigger').first().json.message.chat.id }}",
+        "text": "=Sorry {{ $('Telegram Trigger').first().json.message.from.first_name }}, I can only help with questions about Paragon International University! 🎓\n\nPlease ask me about:\n- Academic programs and courses 📚\n- Admissions and scholarships 💰\n- Campus information and facilities 🏫\n- Events and activities 🎉\n- Or anything else related to Paragon University!\n\nHow can I help you with Paragon University today? 😊",
+        "additionalFields": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        816,
+        380
+      ],
+      "id": "03f31bcd-a006-46cf-b1f1-e5c133b31bed",
+      "name": "Off Topic Response",
+      "webhookId": "a4f5b43a-f664-47cb-9b05-f9705c828fa1",
+      "credentials": {
+        "telegramApi": {
+          "id": "QRdJieseamFACxBo",
+          "name": "dom_n8n_testing_bot"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=You are an AI assistant for Paragon International University.\nUser: {{ $('Telegram Trigger').first().json.message.from.first_name }}\nQuestion: {{ $('Telegram Trigger').first().json.message.text }}\n\nSearch Results:\n{{ JSON.stringify($json.results, null, 2) }}\n\nCRITICAL INSTRUCTIONS:\n1. Check if the search results contain information that answers the user's question\n2. If YES - provide the answer using ONLY information from the search results\n3. If NO - respond EXACTLY with: \"I couldn't find information about that in our Paragon University database.\"\n\nNEVER make up information. NEVER answer questions using general knowledge.\nOnly use information explicitly stated in the search results above.\n\nIf answering from search results, format as:\n[Direct answer without any prefacing] 📚\n\nSource: [URL from search results]",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1.9,
+      "position": [
+        1036,
+        180
+      ],
+      "id": "a418abe5-ed53-427f-a122-2fc1e5a1c1a9",
+      "name": "Answer Question"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Check if this answer provides a response about Paragon University.\n\nQuestion: {{ $('Telegram Trigger').first().json.message.text }}\nAnswer: {{ $('Answer Question').first().json.output }}\n\nIf the answer discusses ANY Paragon University topic (programs, fees, admissions, facilities, etc.) = VALID\nIf the answer says \"I couldn't find information\" or similar = INVALID\n\nOutput only ONE word: VALID or INVALID\n\nCRITICAL: Output ONLY the ONE word. No explanations. No punctuation. No newlines. Just one word.",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 2,
+      "position": [
+        1412,
+        180
+      ],
+      "id": "24b0b156-51d2-4efe-ad5a-b60c59e6b2f6",
+      "name": "Answer Validator"
+    },
+    {
+      "parameters": {
+        "model": "deepseek/deepseek-r1-0528:free",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenRouter",
+      "typeVersion": 1,
+      "position": [
+        1500,
+        400
+      ],
+      "id": "4be2494b-928e-4a19-b677-b215c9ac1936",
+      "name": "OpenRouter Chat Model2",
+      "credentials": {
+        "openRouterApi": {
+          "id": "EsgTrCmKLg2taeW8",
+          "name": "Paragon Chatbot (oudombol610)"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "f087f995-dcea-4f01-b467-379660665023",
+              "leftValue": "={{ $('Question Validator').first().json.output }}",
+              "rightValue": "RELEVANT",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        596,
+        280
+      ],
+      "id": "05c1876e-2ca8-4d60-af68-64cc93b2f53e",
+      "name": "Question Relevance Check"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "0f3b3241-c8a9-44a9-80c2-e33c94f85528",
+              "leftValue": "={{ $('Answer Validator').first().json.output }}",
+              "rightValue": "VALID",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1788,
+        180
+      ],
+      "id": "125696d3-3447-4173-a5f3-77fb8e97a8c3",
+      "name": "Answer Relevance Check"
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $('Telegram Trigger').first().json.message.chat.id }}",
+        "text": "={{ $('Answer Question').first().json.output }}",
+        "additionalFields": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        2008,
+        80
+      ],
+      "id": "3761f597-8366-46ae-8edf-f6375e3d621a",
+      "name": "Valid Answer Response",
+      "webhookId": "cbe1c0d3-3bf2-424e-aefa-1fa8794e91b4",
+      "credentials": {
+        "telegramApi": {
+          "id": "QRdJieseamFACxBo",
+          "name": "dom_n8n_testing_bot"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $('Telegram Trigger').first().json.message.chat.id }}",
+        "text": "=I'm sorry {{ $('Telegram Trigger').first().json.message.from.first_name }}, I couldn't find specific information about that in our Paragon University database. 😔  \n\nCould you please: \n- Rephrase your question about Paragon University 🔄 \n- Ask about our programs, admissions, or campus facilities 📋 \n\nHow else can I help you with Paragon University? 🎓✨",
+        "additionalFields": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        2008,
+        280
+      ],
+      "id": "cb7ee153-901e-4bef-a90e-377a019b41b9",
+      "name": "Invalid Answer Response",
+      "webhookId": "829084ee-caf7-4f83-aa48-d9d649b18d37",
+      "credentials": {
+        "telegramApi": {
+          "id": "QRdJieseamFACxBo",
+          "name": "dom_n8n_testing_bot"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Telegram Trigger": {
+      "main": [
+        [
+          {
+            "node": "Question Validator",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenRouter Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Answer Question",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request": {
+      "main": [
+        [
+          {
+            "node": "Answer Question",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenRouter Chat Model1": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Question Validator",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Question Validator": {
+      "main": [
+        [
+          {
+            "node": "Question Relevance Check",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Answer Question": {
+      "main": [
+        [
+          {
+            "node": "Answer Validator",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Answer Validator": {
+      "main": [
+        [
+          {
+            "node": "Answer Relevance Check",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenRouter Chat Model2": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Answer Validator",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Question Relevance Check": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Off Topic Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Answer Relevance Check": {
+      "main": [
+        [
+          {
+            "node": "Valid Answer Response",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Invalid Answer Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "callerPolicy": "workflowsFromSameOwner"
+  },
+  "versionId": "6d1f754b-77b5-440c-880d-f518d59145aa",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "558d88703fb65b2d0e44613bc35916258b0f0bf983c5d4730c00c424b77ca36a"
+  },
+  "id": "Nn0Eq7VcDrA7KYqX",
+  "tags": []
+}
